@@ -6,44 +6,56 @@ Created on Sat Nov 16 15:05:25 2019
 
 need test
 """
+
 import RPi.GPIO as GPIO, sys, socket, threading, time
 
-#thread - check that client socket connection is alive
-def checkConnect(self):
-    '''
-    Every 30 second, server send connect check value 'C'
-    '''
-    while True:
-        #current execute time
-        startTime = time.perf_count()
-            
-        checkMsg = "C"
-        connectCheck = connectionSocket.send(checkMsg.decode('utf-8'))
-        #client socket send closed
-        if connectCheck == b'':
-            self.isClose = True
-        
-        '''
-        wait 30 second
-        for client send return value 'C'
-        ''' 
-        checkTime = time.perf_count()
-        while True:
-            if time.perf_count() - checkTime > 30:
-                self.isClose = True
-                break
-            if cntlMsg == 'C':
-                break
-        
-        while time.perf_count() - startTime < 30:
-            pass
-        
-#pin output value
-HIGH = 1
-LOW = 0
+#recive message(global)
+cntlMsg = ''
+lock = threading.Lock()
 
 #flag for close
 isClose = False
+
+#thread - check that client socket connection is alive
+def checkConnect(intervalValue):
+    interval = intervalValue
+    global isClose
+    '''
+    Every [interval] second, server send connect check value 'C'
+    '''
+    while True:
+        #current execute time
+        startTime = time.perf_counter()
+            
+        checkMsg = "C"
+        
+        print("alive check")
+        #client socket send closed
+        
+        '''
+        wait [interval] second
+        for client send return value 'C'
+        ''' 
+        checkTime = time.perf_counter()
+        while True:
+            lock.acquire()
+            connectCheck = connectionSocket.send(checkMsg.encode('utf-8'))
+            if connectCheck != 1:
+                print("socket closed")
+                isClose = True
+            
+            lock.release()
+            while time.perf_counter() - startTime < interval:
+                pass
+        
+def waitTime(endTime):
+    startTime = time.perf_counter()
+    while time.perf_counter() - startTime < endTime:
+        pass
+
+#pin output value
+HIGH = 1
+LOW = 0
 
 #pwm setting(speed, pin)
 motor1speed = 50
@@ -77,33 +89,34 @@ pwm2 = GPIO.PWM(enableButton[1], motor2speed)
 #pwm start
 pwm1.start(motor1speed)
 pwm2.start(motor2speed)    
-    
+
 #ip, port
 #ip = input("ip: ")
-ip = '192.168.43.249'
+ip = '192.168.43.250'
 
 #port = input("port: ")
 port = 54321
         
 addr = (ip, int(port))
  
-print("ip, port :" + addr)
+print("ip, port :" + ip + ", ", port)
 
 #bind Server socket
 while True:
-    try:
-        serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        print("Make server socket")
+    while True:
+        try:
+            serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            print("Make server socket")
         
-        serverSocket.bind(addr)
-        print("binded socket")
-        break
+            serverSocket.bind(addr)
+            print("binded socket")
+            break
     
-    except:
-        print("reconnect")
-        time.sleep(2)
-        serverSocket.close()
-        continue
+        except:
+            print("reconnect")
+            serverSocket.close()
+            waitTime(10)
+            continue
     
     #waiting for client socket(1)    
     serverSocket.listen(1)
@@ -113,7 +126,9 @@ while True:
            
     print("connect")   
     
-    threading._start_new_thread(target=checkConnect, args=())
+    connectionTread = threading.Thread(target=checkConnect, args=(30,), daemon=True)
+    connectionTread.start()
+    
     #comunication    
     while True:
                 
@@ -171,8 +186,8 @@ while True:
             cntlFlag = [LOW, HIGH, LOW, HIGH]
         #speed value
         elif cntlMsg.isdecimal():               
-            motor1speed = int(cntlMsg)
-            motor2speed = int(cntlMsg)
+            motor1speed = int(cntlMsg) * 10
+            motor2speed = int(cntlMsg) * 10
         #exception
         else:
             print(cntlMsg + "is garbage")
