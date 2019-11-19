@@ -15,11 +15,13 @@ lock = threading.Lock()
 
 #flag for close
 isClose = False
+closeFlag = False
 
 #thread - check that client socket connection is alive
 def checkConnect(intervalValue):
     interval = intervalValue
     global isClose
+    global closeFlag
     '''
     Every [interval] second, server send connect check value 'C'
     '''
@@ -29,24 +31,42 @@ def checkConnect(intervalValue):
             
         checkMsg = "C"
         
-        print("alive check")
         #client socket send closed
-        
+        print("alive check")
+                
         '''
         wait [interval] second
         for client send return value 'C'
         ''' 
-        checkTime = time.perf_counter()
+        
         while True:
+            #resourse lock
             lock.acquire()
+            
+            #send to connection socket 'c'
             connectCheck = connectionSocket.send(checkMsg.encode('utf-8'))
+            
+            #connectCheck is accpet send msg byte, if not 1 is closed
             if connectCheck != 1:
                 print("socket closed")
                 isClose = True
             
+            #recv 'c' in 30 seconds
+            closeFlag = True
+            
             lock.release()
+        
             while time.perf_counter() - startTime < interval:
                 pass
+            
+            lock.acquire()
+            
+            if closeFlag:
+                isClose = True
+                
+            lock.release()
+            
+            break
         
 def waitTime(endTime):
     startTime = time.perf_counter()
@@ -166,6 +186,8 @@ while True:
         #close
         if cntlMsg == 'E':
             isClose = True
+        elif cntlMsg == 'C':
+            closeFlag = False
         #newline charator
         elif cntlMsg =='\n':
             continue
