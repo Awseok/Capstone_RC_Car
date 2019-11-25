@@ -1,29 +1,27 @@
 #-*- coding: utf-8 -*-
-"""
-Created on Sat Nov 16 15:05:25 2019
-
-@author: wonseok
-
-need test
-"""
-
 import RPi.GPIO as GPIO, sys, socket, threading, time
 
-#recive message(global)
-cntlMsg = ''
+
+#thread lock value
 lock = threading.Lock()
 
-#flag for close
+'''
+exit flag
+closeFlag is connection_check_value in thread
+isClose is program exit flag
+'''
 isClose = False
 closeFlag = False
 
 #thread - check that client socket connection is alive
 def checkConnect(intervalValue):
+    
     interval = intervalValue
     global isClose
     global closeFlag
+    
     '''
-    Every [interval] second, server send connect check value 'C'
+    Every [interval] seconds, server send connect_check_character 'C'
     '''
     while True:
         #current execute time
@@ -31,11 +29,10 @@ def checkConnect(intervalValue):
             
         checkMsg = "C"
         
-        #client socket send closed
         print("alive check")
                 
         '''
-        wait [interval] second
+        wait [interval] seconds
         for client send return value 'C'
         ''' 
         
@@ -77,38 +74,37 @@ def waitTime(endTime):
 HIGH = 1
 LOW = 0
 
-#pwm setting(speed, pin)
-motor1speed = 50
-motor2speed = 50
-leftMotor = [19,26]
-rightMotor = [20,21]
-enableButton = [6, 12]
+#pwm setting(speed, degree, pin)
+#speed : 0 ~ 250?
+servoDegree = 90
+motorSpeed = 50
+servoMotorPwmPin = 13
+motorPwmPin = 12
+motorPin = [20,21]
 
-#GPIO motor pin setting
+#GPIO initialize
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(leftMotor[0], GPIO.OUT)
-GPIO.setup(leftMotor[1], GPIO.OUT)
-GPIO.setup(rightMotor[0], GPIO.OUT)
-GPIO.setup(rightMotor[1], GPIO.OUT)
+
+#GPIO setting
+GPIO.setup(motorPin[0], GPIO.OUT)
+GPIO.setup(motorPin[1], GPIO.OUT)
 
 #GPIO first value
-GPIO.output(leftMotor[0], LOW)
-GPIO.output(leftMotor[1], LOW)
-GPIO.output(rightMotor[0], LOW)
-GPIO.output(rightMotor[1], LOW)
+GPIO.output(motorPin[0], LOW)
+GPIO.output(motorPin[1], LOW)
 
 #GPIO pwm pin setting
-GPIO.setup(enableButton[0], GPIO.OUT)
-GPIO.setup(enableButton[1], GPIO.OUT)
+GPIO.setup(motorPwmPin, GPIO.OUT)
+GPIO.setup(servoMotorPwmPin, GPIO.OUT)
 
 #pwm bind
-pwm1 = GPIO.PWM(enableButton[0], motor1speed)
-pwm2 = GPIO.PWM(enableButton[1], motor2speed)
+motorPwm = GPIO.PWM(motorPwmPin, motorSpeed)
+servoPwm = GPIO.PWM(servoMotorPwmPin, servoDegree)
 
 #pwm start
-pwm1.start(motor1speed)
-pwm2.start(motor2speed)    
+motorPwm.start(motorSpeed)
+servoPwm.start(servoDegree)    
 
 #ip, port
 #ip = input("ip: ")
@@ -146,7 +142,9 @@ while True:
            
     print("connect")   
     
-    connectionTread = threading.Thread(target=checkConnect, args=(30,), daemon=True)
+    #connectio check thread
+    checkCycle = 30
+    connectionTread = threading.Thread(target=checkConnect, args=(checkCycle,), daemon=True)
     connectionTread.start()
     
     #comunication    
@@ -176,8 +174,8 @@ while True:
         if isClose:
             connectionSocket.close()
             serverSocket.close()
-            pwm1.stop()
-            pwm2.stop()
+            servoPwm.stop()
+            motorPwm.stop()
             GPIO.cleanup()
             sys.exit()
             
@@ -191,39 +189,38 @@ while True:
         #newline charator
         elif cntlMsg =='\n':
             continue
-        #left
-        elif cntlMsg == 'L':
-            cntlFlag = [LOW, LOW, HIGH, LOW]
-        #Right
-        elif cntlMsg == 'R':
-            cntlFlag = [HIGH, LOW, LOW, LOW]
-        #Foward
+        #foward
         elif cntlMsg == 'F':
-            cntlFlag = [HIGH, LOW, HIGH, LOW]
-        #Nuetral
-        elif cntlMsg == 'N':
-            cntlFlag = [LOW, LOW, LOW, LOW]
-        #Back
+            cntlFlag = [HIGH, LOW]
+        #rear
+        elif cntlMsg == 'R':
+            cntlFlag = [LOW, HIGH]
+        #break
         elif cntlMsg == 'B':
-            cntlFlag = [LOW, HIGH, LOW, HIGH]
+            cntlFlag = [LOW, LOW]
+        #Nuetral
+        elif cntlMsg == 'L':
+            servoDegree = servoDegree - 3
+        #Back
+        elif cntlMsg == 'R':
+            servoDegree = servoDegree + 3
         #speed value
         elif cntlMsg.isdecimal():               
             motor1speed = int(cntlMsg) * 10
-            motor2speed = int(cntlMsg) * 10
         #exception
         else:
             print(cntlMsg + "is garbage")
         
-        #change motor speed
-        pwm1.ChangeDutyCycle(motor1speed)
-        pwm2.ChangeDutyCycle(motor2speed)
+        #change servo degree
         
-        #motor[in1, in2]
-        leftMotorFlag = cntlFlag[0:2]
-        rightMotorFlag = cntlFlag[2:4]    
-
-        GPIO.output(leftMotor[0], leftMotorFlag[0])
-        GPIO.output(leftMotor[1], leftMotorFlag[1])
-        GPIO.output(rightMotor[0], rightMotorFlag[0])
-        GPIO.output(rightMotor[1], rightMotorFlag[1])
+        if(servoDegree < 30):
+            servoDegree = 30
+        elif(servoDegree > 120):
+            servoDegree = 120
+            
+        servoPwm.ChangeDutyCycle(servoDegree)
+        
+        GPIO.output(motorPin[0], cntlFlag[0])
+        GPIO.output(motorPin[1], cntlFlag[1])
+     
     
