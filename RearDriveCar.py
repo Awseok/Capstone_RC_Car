@@ -1,7 +1,6 @@
 #-*- coding: utf-8 -*-
 import RPi.GPIO as GPIO, sys, socket, threading, time
 
-
 #thread lock value
 lock = threading.Lock()
 
@@ -189,27 +188,14 @@ while True:
         #newline charator
         elif cntlMsg =='\n':
             continue
-        #foward
-        elif cntlMsg == 'F':
+
+        servoDegree = cntlMsg.split()[0]
+
+        time = cntlMsg.split()[1]
+
+        if(cntlMsg.split()[2] == 'F'):
             cntlFlag = [HIGH, LOW]
-        #rear
-        elif cntlMsg == 'R':
-            cntlFlag = [LOW, HIGH]
-        #break
-        elif cntlMsg == 'B':
-            cntlFlag = [LOW, LOW]
-        #Nuetral
-        elif cntlMsg == 'L':
-            servoDegree = servoDegree - 3
-        #Back
-        elif cntlMsg == 'R':
-            servoDegree = servoDegree + 3
-        #speed value
-        elif cntlMsg.isdecimal():               
-            motor1speed = int(cntlMsg) * 10
-        #exception
-        else:
-            print(cntlMsg + "is garbage")
+        cntlFlag = [LOW, HIGH]
         
         #change servo degree
         
@@ -222,5 +208,9 @@ while True:
         
         GPIO.output(motorPin[0], cntlFlag[0])
         GPIO.output(motorPin[1], cntlFlag[1])
-     
-    
+
+        time.sleep(time)
+
+        GPIO.output(motorPin[0], LOW)
+        GPIO.output(motorPin[1], LOW)
+
