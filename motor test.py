@@ -76,30 +76,30 @@ GPIO.setmode(GPIO.BCM)
       
 #모터 핀 설정
 #핀 설정후 PWM 핸들 얻어옴 
-pwmA = setPinConfig(ENA, IN1, IN2)
+#pwmA = setPinConfig(ENA, IN1, IN2)
 pwmB = setPinConfig(ENB, IN3, IN4)
 
     
 #제어 시작
 
 # 앞으로 80프로 속도로
-setMotor(CH1, 80, FORWARD)
+#setMotor(CH1, 80, FORWARD)
 setMotor(CH2, 80, FORWARD)
 #5초 대기
 sleep(5)
 
 # 뒤로 40프로 속도로
-setMotor(CH1, 40, BACKWORD)
+#setMotor(CH1, 40, BACKWORD)
 setMotor(CH2, 40, BACKWORD)
 sleep(5)
 
 # 뒤로 100프로 속도로
-setMotor(CH1, 100, BACKWORD)
+#setMotor(CH1, 100, BACKWORD)
 setMotor(CH2, 100, BACKWORD)
 sleep(5)
 
 #정지 
-setMotor(CH1, 80, STOP)
+#setMotor(CH1, 80, STOP)
 setMotor(CH2, 80, STOP)
 
 # 종료

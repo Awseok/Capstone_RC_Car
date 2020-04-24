@@ -75,11 +75,13 @@ LOW = 0
 
 #pwm setting(speed, degree, pin)
 #speed : 0 ~ 250?
-servoDegree = 90
+servoDegree = 50
 motorSpeed = 50
 servoMotorPwmPin = 13
 motorPwmPin = 12
 motorPin = [20,21]
+SERVO_MAX_DUTY = 12
+SERVO_MIN_DUTY = 3
 
 #GPIO initialize
 GPIO.setwarnings(False)
@@ -102,15 +104,15 @@ motorPwm = GPIO.PWM(motorPwmPin, motorSpeed)
 servoPwm = GPIO.PWM(servoMotorPwmPin, servoDegree)
 
 #pwm start
-motorPwm.start(motorSpeed)
-servoPwm.start(servoDegree)    
+motorPwm.start(0)
+servoPwm.start(0)    
 
 #ip, port
 #ip = input("ip: ")
-ip = '192.168.43.250'
+ip = '172.30.1.25'
 
 #port = input("port: ")
-port = 54321
+port = 54326
         
 addr = (ip, int(port))
  
@@ -142,9 +144,9 @@ while True:
     print("connect")   
     
     #connectio check thread
-    checkCycle = 30
-    connectionTread = threading.Thread(target=checkConnect, args=(checkCycle,), daemon=True)
-    connectionTread.start()
+    #checkCycle = 30
+    #connectionTread = threading.Thread(target=checkConnect, args=(checkCycle,), daemon=True)
+    #connectionTread.start()
     
     #comunication    
     while True:
@@ -154,7 +156,7 @@ while True:
         
         #recive
         try:
-            cntlMsg = connectionSocket.recv(1)
+            cntlMsg = connectionSocket.recv(8)
             
         #can't handle IOException
         except:
@@ -179,6 +181,7 @@ while True:
             sys.exit()
             
         cntlMsg = cntlMsg.decode('utf-8')
+        print(cntlMsg)
        
         #close
         if cntlMsg == 'E':
@@ -189,9 +192,9 @@ while True:
         elif cntlMsg =='\n':
             continue
 
-        servoDegree = cntlMsg.split()[0]
+        servoDegree = int(cntlMsg.split()[0])
 
-        time = cntlMsg.split()[1]
+        doTime = int(cntlMsg.split()[1])
 
         if(cntlMsg.split()[2] == 'F'):
             cntlFlag = [HIGH, LOW]
@@ -199,17 +202,18 @@ while True:
         
         #change servo degree
         
-        if(servoDegree < 30):
-            servoDegree = 30
-        elif(servoDegree > 120):
-            servoDegree = 120
-            
+        if(servoDegree < 0):
+            servoDegree = 0
+        elif(servoDegree > 180):
+            servoDegree = 180
+        
+        duty = SERVO_MIN_DUTY+(servoDegree*(SERVO_MAX_DUTY-SERVO_MIN_DUTY)/180.0)
         servoPwm.ChangeDutyCycle(servoDegree)
         
         GPIO.output(motorPin[0], cntlFlag[0])
         GPIO.output(motorPin[1], cntlFlag[1])
 
-        time.sleep(time)
+        time.sleep(doTime)
 
         GPIO.output(motorPin[0], LOW)
         GPIO.output(motorPin[1], LOW)
