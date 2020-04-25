@@ -109,10 +109,10 @@ servoPwm.start(0)
 
 #ip, port
 #ip = input("ip: ")
-ip = '172.30.1.25'
+ip = '172.30.1.40'
 
 #port = input("port: ")
-port = 54326
+port = 54321
         
 addr = (ip, int(port))
  
