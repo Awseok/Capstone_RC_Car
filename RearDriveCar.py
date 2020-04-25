@@ -156,7 +156,7 @@ while True:
         
         #recive
         try:
-            cntlMsg = connectionSocket.recv(8)
+            cntlMsg = connectionSocket.recv(6)
             
         #can't handle IOException
         except:
@@ -198,7 +198,8 @@ while True:
 
         if(cntlMsg.split()[2] == 'F'):
             cntlFlag = [HIGH, LOW]
-        cntlFlag = [LOW, HIGH]
+        else:
+            cntlFlag = [LOW, HIGH]
         
         #change servo degree
         
