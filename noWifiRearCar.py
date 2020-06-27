@@ -20,8 +20,8 @@ motorSpeed = 50
 servoMotorPwmPin = 13
 motorPwmPin = 12
 motorPin = [20,21]
-SERVO_MAX_DUTY = 12
-SERVO_MIN_DUTY = 3
+SERVO_MAX_DUTY = 11
+SERVO_MIN_DUTY = 4
 
 #GPIO initialize
 GPIO.setwarnings(False)
